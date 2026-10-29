@@ -35,15 +35,31 @@ While the viewer is open, it blocks GitHub's own keyboard shortcuts so they don'
 
 ## Install
 
-The extension isn't on the Chrome Web Store, so you load it unpacked:
+The extension isn't on the Chrome Web Store, so you load it unpacked.
 
-1. Clone this repo: `git clone https://github.com/2labs-io/github-tweaks.git`
-2. Open `chrome://extensions` in Chrome (or any Chromium browser: Edge, Arc, Brave).
-3. Turn on **Developer mode** in the top-right corner.
-4. Click **Load unpacked** and select the cloned `github-tweaks` folder.
-5. Pin the extension and reload any open GitHub tabs.
+### From a release
 
-To update, run `git pull`, then click the reload icon on the extension's card in `chrome://extensions`.
+1. Download `github-tweaks-vX.Y.Z.zip` from the [latest release](https://github.com/2labs-io/github-tweaks/releases/latest).
+2. Unzip it into a folder you'll keep. Chrome loads the extension from that folder, so don't delete it.
+3. Open `chrome://extensions` in Chrome (or any Chromium browser: Edge, Arc, Brave).
+4. Turn on **Developer mode** in the top-right corner.
+5. Click **Load unpacked** and select the unzipped folder (the one containing `manifest.json`).
+6. Pin the extension and reload any open GitHub tabs.
+
+To update, unzip the new release over the same folder, then click the reload icon on the extension's card in `chrome://extensions`. Your settings are kept.
+
+### From source
+
+Clone the repo (`git clone https://github.com/2labs-io/github-tweaks.git`) and follow steps 3–6 above, selecting the cloned folder. To update, run `git pull` and reload the extension.
+
+### Making a release
+
+```sh
+zip -r github-tweaks-v0.1.0.zip manifest.json src icons -x "*.DS_Store"
+gh release create v0.1.0 github-tweaks-v0.1.0.zip --title "v0.1.0"
+```
+
+Bump `version` in `manifest.json` first so Chrome shows the new version.
 
 Click the toolbar icon to turn tweaks on or off. Changes take effect immediately on open tabs and sync across your Chrome profile.
 
