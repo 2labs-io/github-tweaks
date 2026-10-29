@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>GitHub Tweaks</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <img class="logo" src="../../icons/icon-48.png" alt="" width="24" height="24" />
+      <h1>GitHub Tweaks</h1>
+      <span class="version Label" id="version"></span>
+    </header>
+
+    <main>
+      <ul class="tweaks" id="tweaks"></ul>
+    </main>
+
+    <footer class="footer">
+      Hold <kbd>⌘</kbd>/<kbd>Ctrl</kbd> while clicking an image to open it in a new tab.
+    </footer>
+
+    <template id="tweak-row">
+      <li class="tweak">
+        <div class="tweak-text">
+          <label class="tweak-name"></label>
+          <p class="tweak-description"></p>
+        </div>
+        <button type="button" class="toggle" role="switch" aria-checked="false">
+          <span class="toggle-status" aria-hidden="true"></span>
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-knob"></span></span>
+        </button>
+      </li>
+    </template>
+
+    <script src="../shared/tweaks.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

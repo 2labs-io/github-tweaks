@@ -1,0 +1,483 @@
+/* Image lightbox. Colors come from GitHub's Primer tokens so the viewer follows
+   the user's theme; fallbacks are Primer light values. */
+
+html.ght-lightbox-enabled .markdown-body img:not(.emoji):not(a img),
+html.ght-lightbox-enabled .markdown-body a[href*="/user-attachments/assets/"] img,
+html.ght-lightbox-enabled .markdown-body a[href*="githubusercontent.com"] img {
+  cursor: zoom-in;
+}
+
+html.ght-lightbox-lock,
+html.ght-lightbox-lock body {
+  overflow: hidden !important;
+}
+
+.ght-lightbox {
+  --ght-surface: var(--overlay-bgColor, var(--bgColor-default, #ffffff));
+  --ght-fg: var(--fgColor-default, #1f2328);
+  --ght-muted: var(--fgColor-muted, #59636e);
+  --ght-border: var(--borderColor-default, #d1d9e0);
+  --ght-border-muted: var(--borderColor-muted, #d1d9e0b3);
+  --ght-hover: var(--control-transparent-bgColor-hover, #818b981a);
+  --ght-active: var(--control-transparent-bgColor-active, #818b9826);
+  --ght-neutral: var(--bgColor-neutral-muted, #818b981f);
+  --ght-accent: var(--borderColor-accent-emphasis, #0969da);
+  --ght-focus: var(--focus-outlineColor, #0969da);
+  --ght-success: var(--fgColor-success, #1a7f37);
+  --ght-shadow: var(--shadow-floating-large, 0 0 0 1px #d1d9e0, 0 40px 80px 0 #25292e3d);
+  --ght-radius: var(--borderRadius-large, 12px);
+  --ght-ease: cubic-bezier(0.33, 1, 0.68, 1);
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  color: var(--ght-fg);
+  font-family: var(--fontStack-sansSerif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif);
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.ght-lightbox[hidden],
+.ght-lightbox [hidden] {
+  display: none !important;
+}
+
+.ght-lightbox *,
+.ght-lightbox *::before,
+.ght-lightbox *::after {
+  box-sizing: border-box;
+}
+
+/* Backdrop: always a deep scrim so photos and screenshots read well in either theme. */
+.ght-lb-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(1 4 9 / 0.88);
+  backdrop-filter: blur(6px) saturate(120%);
+  opacity: 0;
+  transition: opacity 200ms var(--ght-ease);
+}
+
+.ght-lightbox.is-open .ght-lb-backdrop {
+  opacity: 1;
+}
+
+/* Stage + image */
+.ght-lb-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.ght-lb-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0;
+  border-radius: 6px;
+  transform-origin: 0 0;
+  cursor: zoom-in;
+  background: transparent;
+  box-shadow: 0 24px 64px rgb(1 4 9 / 0.5);
+  will-change: transform;
+  transition: opacity 160ms var(--ght-ease);
+}
+
+.ght-lb-image.is-animated {
+  transition:
+    transform 280ms var(--ght-ease),
+    opacity 160ms var(--ght-ease);
+}
+
+.ght-lb-image.is-loading {
+  opacity: 0;
+}
+
+.ght-lightbox.is-zoomed .ght-lb-image {
+  cursor: grab;
+  border-radius: 0;
+}
+
+.ght-lightbox.is-dragging .ght-lb-image {
+  cursor: grabbing;
+}
+
+.ght-lightbox.is-closing .ght-lb-image {
+  opacity: 0;
+  transition:
+    transform 220ms var(--ght-ease),
+    opacity 220ms ease-in 60ms;
+}
+
+.ght-lightbox.is-closing .ght-lb-backdrop {
+  transition-duration: 220ms;
+}
+
+.ght-lb-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.ght-lb-spinner span {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgb(255 255 255 / 0.2);
+  border-top-color: rgb(255 255 255 / 0.9);
+  border-radius: 50%;
+  animation: ght-spin 700ms linear infinite;
+}
+
+@keyframes ght-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Floating bars */
+.ght-lb-bar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 200ms var(--ght-ease),
+    translate 200ms var(--ght-ease);
+}
+
+.ght-lb-top {
+  top: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  translate: 0 -8px;
+}
+
+.ght-lb-bottom {
+  bottom: 16px;
+  justify-content: center;
+  translate: 0 8px;
+}
+
+.ght-lightbox.is-open .ght-lb-bar {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.ght-lb-panel {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px;
+  background: var(--ght-surface);
+  border: 1px solid var(--ght-border-muted);
+  border-radius: var(--ght-radius);
+  box-shadow: var(--ght-shadow);
+  pointer-events: auto;
+}
+
+.ght-lb-meta {
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  height: 40px;
+  max-width: min(560px, 55vw);
+}
+
+.ght-lb-counter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ght-fg);
+  background: var(--ght-neutral);
+  border-radius: 8px;
+}
+
+.ght-lb-author {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.ght-lb-author img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--avatar-borderColor, #1f23281f);
+}
+
+.ght-lb-caption {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ght-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ght-lb-divider {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--ght-border);
+}
+
+/* Buttons mirror Primer's invisible IconButton. */
+.ght-lb-btn {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ght-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 80ms ease,
+    color 80ms ease;
+}
+
+.ght-lb-btn:hover {
+  color: var(--ght-fg);
+  background: var(--ght-hover);
+}
+
+.ght-lb-btn:active {
+  background: var(--ght-active);
+}
+
+.ght-lb-btn:focus-visible {
+  outline: 2px solid var(--ght-focus);
+  outline-offset: -2px;
+}
+
+.ght-lb-btn .octicon {
+  display: block;
+  flex: none;
+}
+
+.ght-lb-btn.is-success {
+  color: var(--ght-success);
+}
+
+.ght-lb-zoom {
+  min-width: 52px;
+}
+
+/* Tooltips styled like Primer's. */
+.ght-lb-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  translate: -50% -2px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  white-space: nowrap;
+  color: var(--tooltip-fgColor, #ffffff);
+  background: var(--tooltip-bgColor, #25292e);
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    translate 120ms ease;
+  z-index: 1;
+}
+
+.ght-lb-btn[data-tip]:hover::after,
+.ght-lb-btn[data-tip]:focus-visible::after {
+  opacity: 1;
+  translate: -50% 0;
+  transition-delay: 400ms;
+}
+
+.ght-lb-actions .ght-lb-btn[data-action="close"]::after {
+  left: auto;
+  right: 0;
+  translate: 0 -2px;
+}
+
+.ght-lb-actions .ght-lb-btn[data-action="close"]:hover::after,
+.ght-lb-actions .ght-lb-btn[data-action="close"]:focus-visible::after {
+  translate: 0 0;
+}
+
+/* Prev / next */
+.ght-lb-nav {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  color: var(--ght-fg);
+  background: var(--ght-surface);
+  border: 1px solid var(--ght-border-muted);
+  border-radius: 50%;
+  box-shadow: var(--ght-shadow);
+  opacity: 0;
+  transition:
+    opacity 200ms var(--ght-ease),
+    background-color 80ms ease,
+    scale 120ms var(--ght-ease);
+}
+
+.ght-lb-nav:hover {
+  background: var(--ght-surface);
+  scale: 1.06;
+}
+
+.ght-lb-nav:active {
+  scale: 0.96;
+}
+
+.ght-lb-nav[data-tip]::after {
+  display: none;
+}
+
+.ght-lb-prev {
+  left: 20px;
+}
+
+.ght-lb-next {
+  right: 20px;
+}
+
+.ght-lightbox.is-open .ght-lb-nav {
+  opacity: 1;
+}
+
+/* Filmstrip */
+.ght-lb-strip {
+  gap: 4px;
+  max-width: min(720px, 100%);
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.ght-lb-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.ght-lb-thumb {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--ght-neutral);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+.ght-lb-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.ght-lb-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ght-border-muted);
+  transition: box-shadow 120ms ease;
+}
+
+.ght-lb-thumb:hover {
+  opacity: 0.85;
+}
+
+.ght-lb-thumb.is-current {
+  opacity: 1;
+}
+
+.ght-lb-thumb.is-current::after {
+  box-shadow:
+    inset 0 0 0 2px var(--ght-accent),
+    inset 0 0 0 3px var(--ght-surface);
+}
+
+.ght-lb-thumb:focus-visible {
+  outline: 2px solid var(--ght-focus);
+  outline-offset: 1px;
+}
+
+.ght-lb-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .ght-lb-top {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ght-lb-meta {
+    max-width: none;
+  }
+
+  .ght-lb-actions {
+    align-self: flex-end;
+  }
+
+  .ght-lb-nav {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ght-lightbox *,
+  .ght-lightbox *::before,
+  .ght-lightbox *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+.ght-lightbox:focus {
+  outline: none;
+}
